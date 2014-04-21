@@ -16,3 +16,20 @@ The generated code defines a few other methods:
   loadModel()
   performAjaxValidation()
   
+  
+Render a view-----
+  public function actionCreate() {
+    $model = new Page;
+    $this->render('create',array('model'=>$model));
+  }
+  
+The render() method takes an optional third argument, which is a Boolean indicating if the rendered result should be 
+returned to the controller instead of sent to
+the Web browser. This would be useful if you wanted to render the page and then
+send the output in an email or write it to a text file on the server (to act as a cached
+version):
+
+   $body = $this->render('email', 'data' => $data, true);
+   
+   
+
