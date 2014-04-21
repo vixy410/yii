@@ -1,3 +1,11 @@
   By default, all of the view files will go in the protected/views directory
   
   
+ Pass Variable to view from Controller
+ 
+   In Controller->actionIndex(){
+    $num = 25;
+    $this->render('index', array('num' => $num));
+   }
+   
+   $num variable will be available to Index view
