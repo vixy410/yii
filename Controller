@@ -1,1 +1,18 @@
 Controller Docs
+
+The code created by Gii’s scaffolding tool defines these methods for you:
+
+  actionCreate(), for creating new model records
+  actionIndex(), for listing every model record
+  actionView(), for listing a single model record
+  actionUpdate(), for updating a single model record
+  actionDelete(), for deleting a single model record
+  actionAdmin(), for showing every model record in a format designed for administrators
+  
+The generated code defines a few other methods:
+
+  filters()
+  accessRules()
+  loadModel()
+  performAjaxValidation()
+  
