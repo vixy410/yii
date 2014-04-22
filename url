@@ -1,0 +1,36 @@
+We need to generate URLs pointing to the index and page actions of WebsiteController.Depending on where we need it, there are different ways for doing it, but the basics are the same
+
+CHtml::link() and some other CHtml methods, such as form, refresh, and ajaxLink,all accept URLs and are typically used in views
+
+A format for a route is moduleID/controllerID/actionID
+
+Parameters are the $_GET variables that will be passed to an action with an internal route specified. For example, if we want to create a URL to WebsiteController::actionIndex that passes the $_GET['name'] parameter to it, it can be done like this:
+
+echo CHtml::link('Click me!', array('website/index','name' => 'Qiang'));
+
+
+URLs are also helpful when using the controller. Inside the controller, you can use createUrl and createAbsoluteUrl to get both relative and absolute URLs:
+
+  class WebsiteController extends CController
+    {
+      public function actionTest()
+      {
+        echo $this->createUrl('website/page', array('alias' => 'about'));
+        echo '<br />';
+        echo $this->createAbsoluteUrl('website/page', array('alias' => 'test'));
+      }
+      // the rest of the methods
+    }
+    
+  As we have URL rules defined in the router configuration, we will get the following URLs:
+     /about
+     http://example.com/page/test
+  When you cannot get a controller instance, for example, when you implement a console application, you can use the         application's methods:
+  
+  echo Yii::app()->createUrl('website/page', 'alias' => 'about');
+  echo Yii::app()->createAbsoluteUrl('website/page', 'alias' =>'test')
+  
+  All URL building tools we have reviewed internally use the CWebApplication:: createUrl method that calls 
+  CUrlManager::createUrl
+  
+  
