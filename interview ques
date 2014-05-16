@@ -1,0 +1,29 @@
+PHP
+1.	Program to find 4th highest number in an array list with and without sorting? Keep performance in mind
+2.	Print absolute number. Absolute number are those whose term is greater than previous one e.g. 1234, 3689, and 1458 are absolute number. 1209, 3298 are not absolute number.
+3.	In a list of array each number is inserted one by one in a list from 1 to 100. Now on completion one element is missing. Program to find the missing element.
+4.	Find element in an array whose sum is equal to the numbers.
+5.	Remove duplicacy in an array $var = { 1, 3, 5, 2, 2 4,5 }
+6.	Reverse a word. Reverse a sentence
+7.	Palindrome
+8.	Fibonacci
+9.	Prime number
+10.	Sort an array without using built in php function
+11.	What is ob_start() in php
+12.	Cache management in php
+13.	Remember me: what cookies are stored on browser?
+
+WordPress
+1.	Difference in post and pages. How WordPress  differentiate post and pages which are stored in wp_posts table in database
+2.	Can u show widget in Posts or pages? If yes then how?
+3.	Explain the procedure that occurs in WordPress when user hits on url ?
+
+
+SQL
+1.	View creation
+2.	Find 2nd highest salary from table
+3.	Indexes
+4.	Sub queries
+5.	Joins
+
+
