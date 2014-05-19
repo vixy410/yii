@@ -12,6 +12,8 @@ PHP
 11.	What is ob_start() in php
 12.	Cache management in php
 13.	Remember me: what cookies are stored on browser?
+14. Singleton Class
+15. SAOP and REST services
 
 WordPress
 1.	Difference in post and pages. How WordPress  differentiate post and pages which are stored in wp_posts table in database
@@ -24,6 +26,6 @@ SQL
 2.	Find 2nd highest salary from table
 3.	Indexes
 4.	Sub queries
-5.	Joins
+5.	Joins-Inner Joins,Left Joins, Right Joins
 
 
