@@ -1,0 +1,61 @@
+<div class="span8">
+    <?php 
+            $form = $this->beginWidget('CActiveForm',array(
+                    'id' => 'profile-form',
+                    'htmlOptions' => array(
+                            'class' =>'form',
+                            'enctype' => 'multipart/form-data'
+                        )
+                ));
+        ?>
+    <div id="text">
+    
+    </div>
+    <input type="hidden" name="counter" id="counter" value="1">
+    
+    <?php //echo CHtml::button('Add',array('id'=>'add-file-field','class'=>'btn btn-primary',
+        //'value' => 'Add Input Field'));?>
+    
+    <button class="btn btn-primary" type="button" id="add-file-field" >
+
+    <i class="icon-plus icon-white"></i>
+
+    Add Image
+
+</button>
+    
+    
+    <?php $this->endWidget();  ?>
+</div>
+<script type='text/javascript'>
+    
+  function readURL(input,val) {
+
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+            $(val).attr('src', e.target.result);
+        }
+
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+
+
+    
+          $(document).ready(function(){
+                // This will add new input field
+               $("#add-file-field").click(function(){
+                    var counter = $("#counter").val();
+                    counter = parseInt(counter) + 1;
+                    $("#counter").val(counter);    
+                    $("#text").append("<div class='added-field'><span class='btn btn-file'><input name='data[]' class='im"+counter+"' type='file' /></span> &nbsp;<input type='button' class='btn-danger' value='Remove Field' />&nbsp; <img class='img-rounded imge"+counter+"' width='100px' alt='' src='#'></img><br /><br /></div>\n\                        <script>$('.im"+counter+"').change(function(){readURL(this,'.imge"+counter+"');});\n\                        </scr"+"ipt>"); });
+               // The live function binds elements which are added to the DOM at later time
+               // So the newly added field can be removed too
+               $(document).on('click','.btn-danger',function() {
+                    $(this).parent().remove();
+               });
+          });
+     </script>
