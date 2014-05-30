@@ -59,3 +59,12 @@
                });
           });
      </script>
+     
+     
+     
+     
+                    $img_name = explode('.', $images['name'][$key]);
+                    $img_ext = $img_name[count($img_name) - 1];
+                    $rnd = date('dmy') . time() . rand();
+                    $filename = $rnd . "." . $img_ext;
+                    move_uploaded_file($val, Yii::app()->params['lookImagePath'] . $filename);
