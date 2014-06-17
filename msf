@@ -1,0 +1,222 @@
+//page1.php
+<?php $form=$this->beginWidget('CActiveForm', array(
+			'id'=>'user-form',
+			'enableAjaxValidation'=>false,
+			'stateful'=>true,
+)); ?>
+
+		<div class="row">
+		<?php echo $form->labelEx($model,'first_name'); ?>
+		<?php echo $form->textField($model,'first_name',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'first_name'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'last_name'); ?>
+		<?php echo $form->textField($model,'last_name',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'last_name'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'gender'); ?>
+		<?php echo $form->textField($model,'gender',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'gender'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'dob'); ?>
+		<?php echo $form->textField($model,'dob'); ?>
+		<?php echo $form->error($model,'dob'); ?>
+	</div>
+
+<div class="row buttons">
+	<?php echo CHtml::submitButton('Next', array(
+			'name'=>'page2'
+	)); ?>
+</div>
+<?php $this->endWidget(); ?>
+
+//page2.php
+<?php $form=$this->beginWidget('CActiveForm', array(
+			'id'=>'user-form',
+			'enableAjaxValidation'=>false,
+			'stateful'=>true,
+)); ?>
+
+<div class="row">
+		<?php echo $form->labelEx($model,'address_1'); ?>
+		<?php echo $form->textField($model,'address_1',array('size'=>60,'maxlength'=>255)); ?>
+		<?php echo $form->error($model,'address_1'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'address_2'); ?>
+		<?php echo $form->textField($model,'address_2',array('size'=>60,'maxlength'=>255)); ?>
+		<?php echo $form->error($model,'address_2'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'city'); ?>
+		<?php echo $form->textField($model,'city',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'city'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'state'); ?>
+		<?php echo $form->textField($model,'state',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'state'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'country'); ?>
+		<?php echo $form->textField($model,'country',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'country'); ?>
+	</div>
+<div class="row buttons">
+	<?php echo CHtml::submitButton('back', array(
+	'name'=>'page1'
+	)); ?>
+	<?php echo CHtml::submitButton('Next', array(
+	'name'=>'page3'
+	)); ?>
+</div>
+<?php $this->endWidget(); ?>
+
+
+//page3.php
+<?php $form=$this->beginWidget('CActiveForm', array(
+			'id'=>'user-form',
+			'enableAjaxValidation'=>false,
+			'stateful'=>true,
+)); ?>
+
+<div class="row">
+		<?php echo $form->labelEx($model,'phone_number_1'); ?>
+		<?php echo $form->textField($model,'phone_number_1',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'phone_number_1'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'phone_number_2'); ?>
+		<?php echo $form->textField($model,'phone_number_2',array('size'=>50,'maxlength'=>50)); ?>
+		<?php echo $form->error($model,'phone_number_2'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'email_1'); ?>
+		<?php echo $form->textField($model,'email_1',array('size'=>60,'maxlength'=>255)); ?>
+		<?php echo $form->error($model,'email_1'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'email_2'); ?>
+		<?php echo $form->textField($model,'email_2',array('size'=>60,'maxlength'=>255)); ?>
+		<?php echo $form->error($model,'email_2'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'created'); ?>
+		<?php echo $form->textField($model,'created'); ?>
+		<?php echo $form->error($model,'created'); ?>
+	</div>
+
+	<div class="row">
+		<?php echo $form->labelEx($model,'modified'); ?>
+		<?php echo $form->textField($model,'modified'); ?>
+		<?php echo $form->error($model,'modified'); ?>
+	</div>
+<div class="row buttons">
+	<?php echo CHtml::submitButton('Back', array(
+	'name'=>'page2'
+	)); ?>
+	<?php echo CHtml::submitButton('submit', array(
+	'name'=>'submit'
+	)); ?>
+</div>
+<?php $this->endWidget(); ?>
+
+/////////////////////Controller/////////////////////////////
+
+	public function actionCreate()
+	{
+		
+		if( isset($_POST['cancel']) ){
+			$this->redirect('home');
+		}
+		elseif( isset($_POST['page2']) ){
+			$model = new User('page1');
+			$this->checkPageState($model, $_POST['User']);
+			if( $model->validate() ){
+				$this->render( 'page2', array('model' => $model) );
+				$model->scenario = 'page2';
+			}
+			else{
+				$this->render( 'page1', array('model' => $model) );
+				//echo "error";
+			}
+		}
+
+		elseif( isset($_POST['page3']) ){
+			$model = new User('page2');
+			$this->checkPageState($model, $_POST['User']);
+			
+			if( $model->validate() ){
+				$this->render( 'page3', array('model' => $model) );
+				$model->scenario = 'page3';
+			}
+			else{
+				$this->render( 'page2', array('model' => $model) );
+				//echo "error";
+			}
+				
+			}
+
+			elseif(isset($_POST['submit'])){
+				$model = new User('page3');
+				$model->attributes = $this->getPageState('page',array());
+				$model->attributes = $_POST['User'];
+				if($model->save()){
+					echo " success";
+				}
+				else{
+					$this->render( 'page2', array('model' => $model) );
+				}
+			}
+		
+
+		else{
+			$model = new User;
+			$this->checkPageState($model, $_POST);
+			$this->render('page1',array('model'=>$model));
+		}
+	}
+
+///////////////////////////////////////////////////////////////////////////////////
+private function checkPageState( $model, $data ){
+		$model->attributes = $this->getPageState( 'page', array() );
+		$model->attributes = $data;
+		$this->setPageState( 'page', $model->attributes );
+	}
+	
+/////////
+db-----------------------------------------------
+CREATE TABLE IF NOT EXISTS `user` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `gender` varchar(50) NOT NULL,
+  `dob` date NOT NULL,
+  `address_1` varchar(255) NOT NULL,
+  `address_2` varchar(255) DEFAULT NULL,
+  `city` varchar(50) NOT NULL,
+  `state` varchar(50) NOT NULL,
+  `country` varchar(50) NOT NULL,
+  `phone_number_1` varchar(50) NOT NULL,
+  `phone_number_2` varchar(50) DEFAULT NULL,
+  `email_1` varchar(255) NOT NULL,
+  `email_2` varchar(255) DEFAULT NULL,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `modified` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
+
