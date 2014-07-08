@@ -9,3 +9,491 @@
    }
    
    $num variable will be available to Index view
+<?php
+
+/*
+ * Profile Questions
+ * profileQuestions module controller
+ * Manages Profile Questions
+ * 
+ */
+
+class DefaultController extends AdminBaseController {
+
+    public $keyword;
+
+    public function filters() {
+        return array(
+            'accessControl', // perform access control for CRUD operations
+        );
+    }
+
+    /**
+     * Specifies the access control rules.
+     * This method is used by the 'accessControl' filter.
+     * @return array access control rules
+     */
+    public function accessRules() {
+        return array(
+            array('allow', // allow authenticated user to perform 'create' and 'update' actions
+                'actions' => array('delete', 'view', 'index', 'update', 'create'),
+                'users' => array('@'),
+                'expression' => 'isset($user->type) &&
+                                ($user->type==="Admin")'
+            ),
+            array('deny', // deny all users
+                'users' => array('*'),
+            ),
+        );
+    }
+
+    public function actionIndex() {
+        $profilequestion = new ProfileQuestion();
+        $criteria = new CDbCriteria;
+        $paging = array('pageSize' => Yii::app()->params['pagesize']);
+        $default_order = 'profile_category_id ASC';
+        if (Yii::app()->request->getParam('keyword')) {
+            $keyword = Yii::app()->request->getParam('keyword');
+            $this->keyword = $keyword;
+            $criteria->condition = "name LIKE '%$keyword%' ";
+        }
+
+
+        if (isset($_GET['cat']) && $_GET['cat'] > 0) {
+            $default_order = 'question_order ASC';
+            $keyword = Yii::app()->request->getParam('cat');
+            $this->keyword = $keyword;
+            $paging = array('pageSize' => 800);
+            $criteria->condition = "profile_category_id=$keyword";
+        }
+
+        if (isset($_POST['items']) && is_array($_POST['items'])) {
+            $i = 0;
+            foreach ($_POST['items'] as $item) {
+                $profile_question = ProfileQuestion::model()->findByPk($item);
+                $profile_question->question_order = $i;
+                $profile_question->save();
+                $i++;
+            }
+        }
+
+        $dataProvider = new CActiveDataProvider('ProfileQuestion', array(
+            'sort' => array(
+                'defaultOrder' => $default_order,
+                'attributes' => array(
+                    'Profile Category' => array(
+                        'asc' => 'profile_category_id ASC',
+                        'desc' => 'profile_category_id DESC',
+                    ),
+                    'Name' => array(
+                        'asc' => 'name ASC',
+                        'desc' => 'name DESC',
+                    ),
+                    'Detail' => array(
+                        'asc' => 'details ASC',
+                        'desc' => 'details DESC',
+                    ),
+                    'Question Order' => array(
+                        'asc' => 'question_order ASC',
+                        'desc' => 'question_order DESC'
+                    ),
+                    'Multi Options' => array(
+                        'asc' => 'many_options ASC',
+                        'desc' => 'many_options DESC'
+                    ),
+                    'Status' => array(
+                        'asc' => 'show_status ASC',
+                        'desc' => 'show_status DESC'
+                    ),
+                ),
+            ),
+            'criteria' => $criteria,
+            'pagination' => $paging,
+        ));
+
+        $this->render('index', array('dataProvider' => $dataProvider
+        ));
+    }
+
+    public function actionView($id) {
+        $model = $this->loadModel($id);
+        $cat_id = $this->getCategoryId('profile_questions');
+        $images = Image::model()->findByAttributes(array('category_id' => $cat_id, 'item_id' => $id));
+        $options = ProfileOption::model()->findAll('profile_question_id=:id ', array(':id' => $id));
+        if (empty($images->image)) {
+            $this->render('view', array(
+                'model' => $model,
+                'options' => $options
+            ));
+        } else {
+            $this->render('view', array('model' => $model,
+                'image' => $images->image,
+                'options' => $options));
+        }
+    }
+
+    /**
+     * actionCreate
+     */
+    public function actionCreate() {
+
+        $model = new ProfileQuestion;
+        $modelOption = new ProfileOption;
+        $modelImage = new Image;
+        //$cat_id = $this->getCategoryId('profile_questions');
+        //$modelImage              =new Image;
+
+
+        if (isset($_POST['ProfileQuestion'])) {
+            $model->attributes = $_POST['ProfileQuestion'];
+            //$this->pr($_FILES);
+            //$this->pr($_POST,'exit');
+
+
+            if ($model->save()) {
+                $cat_id = $this->getCategoryId('profile_questions');
+                $insert_id = Yii::app()->db->getLastInsertID();
+                if (isset($_POST['option_name'])) {
+                    if (isset($_FILES['images'])) {
+                        $images = $_FILES['images'];
+                    }
+                    $cat_id = $this->getCategoryId('profile_options');
+                    foreach ($_POST['option_name'] as $key => $val) {
+                        $modelOptions = new ProfileOption;
+                        $modelOptions->profile_question_id = $insert_id;
+                        $modelOptions->name = $val;
+                        $modelOptions->details = $_POST['details'][$key];
+                        $modelOptions->show_status = $_POST['show_status'][$key];
+                        $modelOptions->option_order = $_POST['option_order'][$key];
+                        $modelOptions->date_added = date('Y-m-d H:i:s');
+                        // save images
+                        if ($modelOptions->save(false)) {
+                            $option_insert_id = Yii::app()->db->getLastInsertID();
+                            if (isset($_FILES['images'])) {
+                                $modelImage = new Image;
+                                $img_name = explode('.', $images['name'][$key]);
+                                $img_ext = $img_name[count($img_name) - 1];
+                                $rnd = date('dmy') . time() . rand();
+                                $filename = $rnd . "." . $img_ext;
+                                $thumb = $rnd . "." . $img_ext;
+                                if (!empty($img_ext)) {
+                                    move_uploaded_file($images['tmp_name'][$key], Yii::app()->params['lookOptionPath'] . $filename);
+
+                                    //----------thumbnail------------------//
+                                    //Image Thumbnail configuration
+                                    $imgSource = Yii::app()->params['lookOptionPath'] . $filename;
+                                    $width = Yii::app()->params['width'];
+                                    $height = Yii::app()->params['height'];
+                                    $savePath = Yii::app()->params['lookOptionPath'] . "thumb/" . $thumb;
+                                    $this->saveThumbNail($imgSource, $height, $width, $savePath);
+                                    //----------/thumbnail------------------//
+                                    $modelImage['category_id'] = $cat_id;
+                                    $modelImage['item_id'] = $option_insert_id;
+                                    $modelImage['image'] = $filename;
+                                    $modelImage['is_default'] = 1;
+                                    if ($modelImage->save(false)) {
+                                        
+                                    }
+                                }
+                            }
+                        }
+                        // $modelOptions->save(false);
+                    }
+                }
+
+                //Image Upload
+                $model->image = CUploadedFile::getInstance($model, 'image');
+
+                //$modelImage->category_id = $cat_id;
+                /*                 * *************** Adding image in image table***************** */
+                if (!empty($model->image)) {
+                    $modelImage->category_id = $cat_id;
+                    $modelImage->item_id = $insert_id;
+                    $modelImage->is_default = 1;
+                    $this->uploadImage($model, $modelImage);
+                }
+                /*                 * *************** End Adding image in image table***************** */
+
+                //profile option table adds here
+                Yii::app()->user->setFlash('success', 'Details saved successfully');
+                $this->redirect('index');
+            }
+        }
+        $this->render('create', array(
+            'model' => $model,
+        ));
+    }
+
+    /**
+     * Updates a particular model.
+     * If update is successful, the browser will be redirected to the 'view' page.
+     * @param integer $id the ID of the model to be updated
+     */
+    public function actionUpdate($id) {
+        $model = $this->loadModel($id);
+        $cat_id = $this->getCategoryId('profile_questions');
+        // $options = new ProfileOption;
+        $options = ProfileOption::model()->findAll('profile_question_id=:id ', array(':id' => $id));
+
+        
+
+       
+
+        if (Yii::app()->request->getParam('param1') && Yii::app()->request->getParam('param2') && Yii::app()->request->getParam('param3')) {
+            $image_name = Yii::app()->request->getParam('param3');
+            $icat_id = Yii::app()->request->getParam('param1');
+            $item_id = Yii::app()->request->getParam('param2');
+            $this->delImage($icat_id, $item_id, $image_name);
+            $this->redirect(array('default/update/id/' . $id));
+        }
+        // exit;
+        // Uncomment the following line if AJAX validation is needed
+        // $this->performAjaxValidation($model);
+        //$images = Image::model()->findByAttributes(array('category_id' => $cat_id, 'item_id' => $id));
+        //$modelImage = Image::model()->findByAttributes(array('item_id' => $id, 'category_id' => $cat_id, 'is_default' => 1));
+
+
+        if (isset($modelImage->image))
+            $model->image = $modelImage->image;
+        else {
+            $model->image = '';
+            $modelImage = new Image;
+        }
+
+
+        if (isset($_POST['ProfileQuestion'])) {
+            $cat_opt = $this->getCategoryId('profile_options');
+        // $this->pr($options,'exit');
+        
+               
+            $model->attributes = $_POST['ProfileQuestion'];
+            
+            if ($model->save()) {
+                $existing_option_ids = array();
+                foreach ($options as $option) {
+                    $existing_option_ids[] = $option->id;
+                }
+                //print_r($existing_option_ids);
+
+                if (isset($_POST['option_name'])) {
+
+                    if (isset($_POST['option_id'])) {
+                        $del_option_ids = array_diff($existing_option_ids, $_POST['option_id']);
+                        if (count($del_option_ids) > 0) {
+
+                            foreach ($del_option_ids as $del_option_id) {
+                                LookOption::model()->deleteAll('option_id=:option_id', array(':option_id' => $del_option_id));
+                                UserProfile::model()->deleteAll('profile_option_id=:profile_option_id', array(':profile_option_id' => $del_option_id));
+                                $this->loadOptionModel($del_option_id)->delete();
+                            }
+                        }
+                    }
+                    if (isset($_FILES['images'])) {
+                        $images = $_FILES['images'];
+                    }
+                    foreach ($_POST['option_name'] as $key => $val) {
+                        if (isset($_POST['option_id'][$key]))
+                            $modelOptions = ProfileOption::model()->find('id=:id ', array(':id' => $_POST['option_id'][$key]));
+                        else
+                            $modelOptions = new ProfileOption;
+                        $modelOptions->profile_question_id = $id;
+                        $modelOptions->name = $val;
+                        $modelOptions->details = $_POST['details'][$key];
+                        $modelOptions->show_status = $_POST['show_status'][$key];
+                        $modelOptions->option_order = $_POST['option_order'][$key];
+                        $modelOptions->date_added = date('Y-m-d H:i:s');
+                        if ($modelOptions->save(false)) {
+                            if (isset($_POST['option_id'][$key])) {
+                                $option_item_id = $_POST['option_id'][$key];
+                            } else {
+                                $option_item_id = Yii::app()->db->getLastInsertID();
+                            }
+                            if (isset($_FILES['images'])) {
+                                $modelImage = Image::model()->find('item_id=:item_id and category_id=:category_id ', 
+                                        array(':item_id' => $option_item_id, ':category_id' => $cat_opt));
+                                if(!$modelImage)
+                                        $modelImage = new Image;
+                                    else {
+                                        // delete existing images
+                                        if(!empty($images['tmp_name'][$key]))
+                                            $this->deleteImages2($cat_opt, $option_item_id);
+                                    }
+                                $img_name = explode('.', $images['name'][$key]);
+                                $img_ext = $img_name[count($img_name) - 1];
+                                $rnd = date('dmy') . time() . rand();
+                                $filename = $rnd . "." . $img_ext;
+                                $thumb = $rnd . "." . $img_ext;
+                                if (!empty($img_ext)) {
+                                    move_uploaded_file($images['tmp_name'][$key], Yii::app()->params['lookOptionPath'] . $filename);
+
+                                    //----------thumbnail------------------//
+                                    //Image Thumbnail configuration
+                                    $imgSource = Yii::app()->params['lookOptionPath'] . $filename;
+                                    $width = Yii::app()->params['width'];
+                                    $height = Yii::app()->params['height'];
+                                    $savePath = Yii::app()->params['lookOptionPath'] . "thumb/" . $thumb;
+                                    $this->saveThumbNail($imgSource, $height, $width, $savePath);
+                                    //----------/thumbnail------------------//
+                                    $modelImage['category_id'] = $cat_opt;
+                                    $modelImage['item_id'] = $option_item_id;
+                                    $modelImage['image'] = $filename;
+                                    $modelImage['is_default'] = 1;
+                                   // $this->pr($modelImage);
+                                   
+                                    if ($modelImage->save(false)) {
+                                     //   exit;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                $model->image = CUploadedFile::getInstance($model, 'image');
+
+                //Image Upload
+                /*                 * *************** Adding image in image table***************** */
+                if (!empty($model->image)) {
+                    $modelImage->category_id = $cat_id;
+                    $modelImage->item_id = $model->id;
+                    $modelImage->is_default = 1;
+                    $this->uploadImage($model, $modelImage);
+                }
+                /*                 * *************** End Adding image in image table***************** */
+
+                Yii::app()->user->setFlash('success', 'Details updated successfully');
+                $this->redirect(array('index', 'id' => $model->id));
+            }
+        }
+
+        if (empty($modelImage->image)) {
+            $this->render('update', array(
+                'model' => $model,
+                'options' => $options,
+                'image' => ''
+            ));
+        } else {
+
+            $this->render('update', array(
+                'model' => $model,
+                'options' => $options,
+                'image' => $modelImage->image
+            ));
+        }
+    }
+
+    public function actionDelete($id) {
+
+        $profileOptions = ProfileOption::model()->findAll('profile_question_id=:profile_question_id', array(':profile_question_id' => $id));
+        if (is_array($profileOptions))
+            foreach ($profileOptions as $profileOption) {
+                LookOption::model()->deleteAll('option_id=:option_id', array(':option_id' => $profileOption->id));
+            }
+        ProfileOption::model()->deleteAll('profile_question_id=:profile_question_id', array(':profile_question_id' => $id));
+        UserProfile::model()->deleteAll('profile_question_id=:profile_question_id', array(':profile_question_id' => $id));
+
+        $this->loadModel($id)->delete();
+
+        // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+        if (!isset($_GET['ajax']))
+            $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('index'));
+    }
+
+    /**
+     * [loadModel description]
+     * @param  [type] $id [description]
+     * @return [type]     [description]
+     */
+    public function loadOptionModel($id) {
+        $modelOptions = ProfileOption::model()->findByPk($id);
+        if ($modelOptions === null)
+            throw new CHttpException(404, 'Requested Page does not exists');
+        return $modelOptions;
+    }
+
+    public function loadModel($id) {
+        $model = ProfileQuestion::model()->findByPk($id);
+        if ($model === null)
+            throw new CHttpException(404, 'Requested Page does not exists');
+        return $model;
+    }
+
+    public function uploadImage($model, $modelImage) {
+        if (is_object($model->image)) {
+            $rnd = date('dmy') . time() . rand();
+            $fileName = "{$rnd}{$model->image}";  // random number + file name	
+            $model->image->saveAs(Yii::app()->basePath . '/../images/ques-pic/' . $fileName);
+
+            if (!empty($modelImage->image)) {
+                $delete = Yii::app()->basePath . '/../images/ques-pic/' . $modelImage->image;
+                if (file_exists($delete))
+                    unlink($delete);
+            }
+            $modelImage->image = $fileName;
+            $modelImage->save();
+        }
+        elseif (empty($model->image) && !empty($modelImage->image)) {
+            $model->save();
+        }
+    }
+
+    //Delete Images
+    public function delImage($param1, $param2, $param3) {
+        //delete Image
+        $deleteThumb = Yii::app()->params['lookOptionPath'] . "thumb/" . $param3;
+        $delete = Yii::app()->params['lookOptionPath'] . $param3;
+        if (file_exists($deleteThumb))
+            unlink($deleteThumb);
+
+        if (file_exists($delete))
+            unlink($delete);
+
+         $cmd = Yii::app()->db->createCommand();
+            $cmd->delete(
+                        'images', 'category_id=:cat_opt AND item_id=:id AND image=:image_name', array(
+                        ':cat_opt' => $param1,
+                        ':image_name' => $param3,
+                        ':id' => $param2
+                    )
+            );
+        
+        /* --/delete Image-- */
+    }
+
+    public function deleteImages2($cat_id, $item_id) {
+        $criteria = new CDbCriteria();
+        $criteria = array(
+            'select' => array('image'),
+            'condition' => 'category_id=:cat_opt AND item_id=:id',
+            'params' => array(
+                ':cat_opt' => $cat_id,
+                ':id' => $item_id
+            )
+        );
+
+        $img = Image::model()->find($criteria);
+        if (!empty($img->image)) {
+           
+            //delete thumb
+            $deleteThumb = Yii::app()->params['lookOptionPath'] . "thumb/" . $img->image;
+              if (file_exists($deleteThumb))
+                unlink($deleteThumb);
+            //delete image
+            $delete = Yii::app()->params['lookOptionPath'] . $img->image;
+            if (file_exists($delete))
+                unlink($delete);
+           /*
+             $cmd = Yii::app()->db->createCommand();
+            $cmd->delete(
+                        'images', 'category_id=:cat_opt AND item_id=:id AND image=:image_name', array(
+                        ':cat_opt' => $cat_id,
+                        ':image_name' => $img->image,
+                        ':id' => $item_id
+                    )
+            );
+            */
+        }
+    }
+
+}
