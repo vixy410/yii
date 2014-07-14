@@ -1,0 +1,237 @@
+<?php
+/* @var $this DefaultController */
+$this->breadcrumbs = array(
+    'Profile Questions'
+);
+?>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+
+<?php
+    if(isset($_GET['cat']))
+    {
+        if($_GET['cat']>0)
+        {
+        $str_js = "
+            var fixHelper = function(e, ui) {
+                ui.children().each(function() {
+                    $(this).width($(this).width());
+                });
+                return ui;
+            };
+
+            $('#project-grid table tbody ').sortable({
+                forcePlaceholderSize: true,
+                forceHelperSize: true,
+                items: 'tr',
+                update : function () {
+                    serial = $('#project-grid table tbody ').sortable('serialize', {key: 'items[]', attribute: 'class'});
+                    $.ajax({
+                        'url': '" . $this->createUrl('/admin/profilequestions/default') . "',
+                        'type': 'post',
+                        'data': serial,
+                        'success': function(data){
+                        },
+                        'error': function(request, status, error){
+                            alert('We are unable to set the sort order at this time.  Please try again in a few minutes.');
+                        }
+                    });
+                },
+                helper: fixHelper
+            }).disableSelection();
+        ";
+
+        Yii::app()->clientScript->registerScript('sortable-project', $str_js);
+        }
+    }
+?>
+
+<div class="page-header position-relative">
+    <h1>  Profile Questions List  </h1>
+    <div class="backButton">
+
+        <a class="btn btn-warning" href="<?php echo Yii::app()->request->baseUrl ?>/admin/profilequestions/default/create">Add new Profile Questions</a>
+    </div> 
+</div>
+
+<div class="row-fluid" >
+    <div class="span12">
+
+        <?php if (Yii::app()->user->hasFlash('success')): ?>
+            <div class="alert alert-block alert-success">
+                <button type="button" class="close" data-dismiss="alert">
+                    <i class="icon-remove"></i>
+                </button>
+                <?php echo Yii::app()->user->getFlash('success'); ?>
+
+
+            </div>
+        <?php endif; ?> 
+
+        <b>Choose Category :</b>
+
+        <div class="row-fluid" >
+            <div class="span12">
+
+
+
+                <div class="filterDropDown">
+
+                    <?php echo CHtml::beginForm(Yii::app()->request->baseUrl . '/admin/profilequestions/default/', 'get'); ?>
+
+                    Select: 
+
+                    <input type="hidden" name="def" value="<?php echo $this->id ?>" />
+
+                    <?php
+                    echo CHtml::dropDownList('cat', isset($_GET['cat']) ? (int) $_GET['cat'] : 0, CHtml::listData(ProfileCategory::model()->findAll(), 'id', 'name'), array('empty' => 'All categories', 'submit' => ''));
+                    ?>
+
+                    <?php echo CHtml::endForm(); ?>
+
+                </div>
+
+
+
+
+<?php
+if (isset($dataProvider))
+    $this->widget('zii.widgets.grid.CGridView', array(
+        'dataProvider' => $dataProvider,
+        'id' => 'project-grid',
+        //'filter'=>$dataProvider,
+        'rowCssClassExpression'=>'"items[]_{$data->id}"',
+        'itemsCssClass' => 'table table-striped table-bordered table-hover',
+        'columns' => array(
+            array('header' => 'Serial #',
+                'value' => '$this->grid->dataProvider->pagination->currentPage * $this->grid->dataProvider->pagination->pageSize + ($row+1)',
+                'htmlOptions' => array('width' => '6%'),
+            ),
+            array(
+                'name' => 'Name',
+                'type' => 'raw',
+                'value' => 'CHtml::encode($data->name)'
+            ),
+            array(
+                'name' => 'Detail',
+                'type' => 'raw',
+                'value' => '$data->details',
+            ),
+            array(
+                'name' => 'Profile Category',
+                'type' => 'raw',
+                'value' => '$data->profilecategory->name',
+            ),
+            array(
+                'name' => 'Question Order',
+                'type' => 'raw',
+                'value' => 'CHtml::encode($data->question_order)'
+            ),
+            array(
+                'name' => 'Multi Options',
+                'type' => 'raw',
+                'value' => 'CHtml::encode(Yii::app()->params[\'status\'][$data->many_options])'
+            ),
+            array(
+                'name' => 'Status',
+                'type' => 'raw',
+                'value' => 'CHtml::encode(Yii::app()->params[\'status\'][$data->show_status])'
+            ),
+            array(
+                'class' => 'CButtonColumn',
+            /*
+              'class' => 'CButtonColumn',
+              'template' => '{view}{update}{delete}',
+              'buttons' => array(
+              'delete' => array(
+              'label' => 'delete',
+              'url' => 'Yii::app()->createUrl("admin/profilequestions/default/delete",array("id"=>$data->id,"keyword"=>"' . $this->keyword . '"))',
+
+              ),
+              ), */
+            ),
+        ),
+//    'htmlOptions'=>array(
+//        'class' => 'widget',
+//        
+//    ),
+    ));
+?>
+
+
+
+            </div>
+        </div>
+
+
+
+
+///controller
+
+    public function actionIndex() {
+        $profilequestion = new ProfileQuestion();
+        $criteria = new CDbCriteria;
+        $paging = array('pageSize' => Yii::app()->params['pagesize']);
+        $default_order = 'profile_category_id ASC';
+        if (Yii::app()->request->getParam('keyword')) {
+            $keyword = Yii::app()->request->getParam('keyword');
+            $this->keyword = $keyword;
+            $criteria->condition = "name LIKE '%$keyword%' ";
+        }
+
+
+        if (isset($_GET['cat']) && $_GET['cat'] > 0) {
+            $default_order = 'question_order ASC';
+            $keyword = Yii::app()->request->getParam('cat');
+            $this->keyword = $keyword;
+            $paging = array('pageSize' => 800);
+            $criteria->condition = "profile_category_id=$keyword";
+        }
+
+        if (isset($_POST['items']) && is_array($_POST['items'])) {
+            $i = 0;
+            foreach ($_POST['items'] as $item) {
+                $profile_question = ProfileQuestion::model()->findByPk($item);
+                $profile_question->question_order = $i;
+                $profile_question->save();
+                $i++;
+            }
+        }
+
+        $dataProvider = new CActiveDataProvider('ProfileQuestion', array(
+            'sort' => array(
+                'defaultOrder' => $default_order,
+                'attributes' => array(
+                    'Profile Category' => array(
+                        'asc' => 'profile_category_id ASC',
+                        'desc' => 'profile_category_id DESC',
+                    ),
+                    'Name' => array(
+                        'asc' => 'name ASC',
+                        'desc' => 'name DESC',
+                    ),
+                    'Detail' => array(
+                        'asc' => 'details ASC',
+                        'desc' => 'details DESC',
+                    ),
+                    'Question Order' => array(
+                        'asc' => 'question_order ASC',
+                        'desc' => 'question_order DESC'
+                    ),
+                    'Multi Options' => array(
+                        'asc' => 'many_options ASC',
+                        'desc' => 'many_options DESC'
+                    ),
+                    'Status' => array(
+                        'asc' => 'show_status ASC',
+                        'desc' => 'show_status DESC'
+                    ),
+                ),
+            ),
+            'criteria' => $criteria,
+            'pagination' => $paging,
+        ));
+
+        $this->render('index', array('dataProvider' => $dataProvider
+        ));
+    }
